@@ -1,0 +1,8 @@
+{
+  "title": "SMILE GAMES",
+  "tagline": "Everything I made, in one place. Tap a tile to play.",
+  "categories": {
+    "Games": { "hue": 190, "order": 1 },
+    "Apps":  { "hue": 315, "order": 2 }
+  }
+}

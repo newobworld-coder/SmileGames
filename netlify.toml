@@ -1,0 +1,4 @@
+# Netlify runs the catalog builder on every deploy, then publishes the folder.
+[build]
+  command = "node build-catalog.mjs"
+  publish = "."

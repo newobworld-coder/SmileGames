@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Smile Games — Arcade</title>
+<title>Smile Games</title>
 <meta name="description" content="A hand-built collection of games and apps. Pick one and play." />
 <meta name="theme-color" content="#070713" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -274,13 +274,9 @@
   <header class="topbar">
     <div class="brand">
       <span class="logo"><svg viewBox="0 0 100 100"><path d="M26 42a24 24 0 0 0 48 0" fill="none" stroke="#38E1FF" stroke-width="8" stroke-linecap="round"/><circle cx="34" cy="30" r="5.5" fill="#FF4DD8"/><circle cx="66" cy="30" r="5.5" fill="#FF4DD8"/></svg></span>
-      <div><b>SMILE GAMES</b><span>ARCADE · v1</span></div>
+      <div><b>SMILE GAMES</b><span>ARCADE</span></div>
     </div>
     <div class="spacer"></div>
-    <div class="mode-pill" id="modePill"><span class="dot"></span><span id="modeText">local preview</span></div>
-    <button class="btn ghost icon" id="lockBtn" title="Admin" aria-label="Unlock admin">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-    </button>
   </header>
 
   <section class="hero">
@@ -304,229 +300,73 @@
   <main class="grid" id="grid"></main>
 </div>
 
-<!-- ============ admin: password ============ -->
-<div class="scrim-bg" id="scrim"></div>
-<div class="dialog" id="pwDialog" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
-  <div class="sheet-head"><div><span class="k">RESTRICTED</span><h2 id="pwTitle">Admin access</h2></div></div>
-  <div class="sheet-body">
-    <p class="hint">Enter the password to add, edit, and remove titles and categories.</p>
-    <label class="f"><span>Password</span>
-      <input class="inp" id="pwInput" type="password" placeholder="••••••••" autocomplete="off" />
-    </label>
-  </div>
-  <div class="sheet-foot">
-    <button class="btn ghost" data-close>Cancel</button>
-    <button class="btn primary" id="pwSubmit">Unlock</button>
-  </div>
-</div>
-
-<!-- ============ admin: upload / edit ============ -->
-<div class="sheet" id="upSheet" role="dialog" aria-modal="true" aria-labelledby="upTitle">
-  <div class="sheet-head"><div><span class="k" id="upKick">NEW TITLE</span><h2 id="upTitle">Add a game or app</h2></div><div class="spacer"></div><button class="btn ghost icon" data-close aria-label="Close">✕</button></div>
-  <div class="sheet-body">
-    <div class="drop" id="drop">
-      <b>Drop an HTML file here</b> or click to choose<br>
-      <span style="font-size:.8rem;color:var(--muted-2)">one self-contained .html file</span>
-      <span class="file" id="dropFile"></span>
-      <input type="file" id="fileInput" accept=".html,text/html" hidden />
-    </div>
-    <div class="hint" id="replaceHint" style="display:none">Editing details only. Drop a new file above to replace the game itself.</div>
-    <div class="divider"></div>
-    <label class="f"><span>Title</span><input class="inp" id="fTitle" placeholder="e.g. VERBALLISTIC" /></label>
-    <div class="row">
-      <label class="f"><span>Category</span><select class="inp" id="fCat"></select></label>
-      <label class="f"><span>Subcategory</span><select class="inp" id="fSub"></select></label>
-    </div>
-    <label class="f"><span>Description</span><textarea class="inp" id="fDesc" placeholder="One line about it (optional)"></textarea></label>
-    <label class="f"><span>Accent colour</span>
-      <div class="hue-pick"><input type="range" id="fHue" min="0" max="360" value="200" /><div class="hue-swatch" id="fHueSw"></div></div>
-    </label>
-    <div class="hint">Leave the accent to match the category, or nudge it to give this tile its own glow.</div>
-    <div class="up-progress" id="upBar"><i></i></div>
-  </div>
-  <div class="sheet-foot">
-    <button class="btn ghost" data-close>Cancel</button>
-    <button class="btn primary" id="upSubmit">Save title</button>
-  </div>
-</div>
-
-<!-- ============ admin: categories ============ -->
-<div class="sheet wide" id="catSheet" role="dialog" aria-modal="true" aria-labelledby="catTitle">
-  <div class="sheet-head"><div><span class="k">STRUCTURE</span><h2 id="catTitle">Categories</h2></div><div class="spacer"></div><button class="btn ghost icon" data-close aria-label="Close">✕</button></div>
-  <div class="sheet-body" id="catBody"></div>
-  <div class="sheet-foot">
-    <button class="btn ghost" id="catAdd">+ Add category</button>
-    <div class="spacer" style="flex:1"></div>
-    <button class="btn ghost" data-close>Cancel</button>
-    <button class="btn primary" id="catSave">Save structure</button>
-  </div>
-</div>
-
-<div class="toasts" id="toasts"></div>
-
+<script src="catalog.js"></script>
 <script type="module">
 /* =====================================================================
- * SMILE GAMES — frontend
- * Works in two modes:
- *   • cloud  — talks to the Netlify Function (shared, persistent for all)
- *   • local  — falls back to this browser's storage so you can preview
- *              the page by just opening index.html (not shared)
+ * SMILE GAMES — folder edition (no backend)
+ * The catalog is generated at build time by build-catalog.mjs and loaded
+ * from catalog.js as window.__CATALOG__. Titles are real files under games/.
  * ===================================================================== */
-
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (s = "") => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
-/* ------------- storage layer (cloud + local fallback) ------------- */
-const LOCAL_PW = "SmileGames92"; // used only for local-preview convenience
-const ls = {
-  get(k, d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch{ return d } },
-  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true }catch{ return false } },
-};
-const LOCAL_DEFAULT = () => ({
-  games: [],
-  categories: [
-    { id:"games", name:"Games", hue:190, subcategories:[
-      {id:"arcade",name:"Arcade"},{id:"eiken-2",name:"Eiken 2"},{id:"eiken-pre-2",name:"Eiken Pre-2"},
-      {id:"eiken-3",name:"Eiken 3"},{id:"eiken-4",name:"Eiken 4"}]},
-    { id:"apps", name:"Apps", hue:315, subcategories:[
-      {id:"learning",name:"Learning"},{id:"tools",name:"Tools"}]},
-  ],
-});
-const blobUrls = new Map();
-
-const api = {
-  mode: "cloud",
-  async init(){
-    try{
-      const r = await fetch("/api/catalog", { cache:"no-store" });
-      if(!r.ok) throw new Error("no api");
-      this.mode = "cloud";
-      return await r.json();
-    }catch{
-      this.mode = "local";
-      return ls.get("sg_catalog", LOCAL_DEFAULT());
-    }
-  },
-  gameUrl(id){
-    if(this.mode === "cloud") return "/api/game/" + encodeURIComponent(id);
-    if(blobUrls.has(id)) return blobUrls.get(id);
-    const html = ls.get("sg_file_" + id, "");
-    const url = URL.createObjectURL(new Blob([html], { type:"text/html" }));
-    blobUrls.set(id, url); return url;
-  },
-  async verify(pw){
-    if(this.mode === "local") return pw === LOCAL_PW;
-    const r = await fetch("/api/verify", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ password:pw }) });
-    return !!(await r.json()).ok;
-  },
-  async upload({ id, title, category, subcategory, description, accent, html }){
-    if(this.mode === "local"){
-      const cat = state.catalog;
-      const gid = id || ("g_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7));
-      if(html != null){
-        if(!ls.set("sg_file_" + gid, html)) throw new Error("This browser's storage is full — deploy to Netlify for unlimited space.");
-        blobUrls.delete(gid);
-      }
-      const now = Date.now();
-      const rec = { id:gid, title, category, subcategory, description, accent, size:(html||"").length, updatedAt:now };
-      const i = cat.games.findIndex(g => g.id === gid);
-      if(i >= 0){ rec.createdAt = cat.games[i].createdAt || now; rec.size = html==null ? cat.games[i].size : rec.size; cat.games[i] = rec; }
-      else { rec.createdAt = now; cat.games.unshift(rec); }
-      ls.set("sg_catalog", cat);
-      return rec;
-    }
-    const qs = new URLSearchParams({ title, category, subcategory, description, accent });
-    if(id) qs.set("id", id);
-    const r = await fetch("/api/upload?" + qs, { method:"POST",
-      headers:{ "x-admin-password":state.pw, "content-type":"text/html" }, body:html });
-    const j = await r.json(); if(!r.ok) throw new Error(j.error || "Upload failed");
-    return j.game;
-  },
-  async updateGame(patch){
-    if(this.mode === "local"){
-      const g = state.catalog.games.find(x => x.id === patch.id);
-      Object.assign(g, patch); g.updatedAt = Date.now(); ls.set("sg_catalog", state.catalog); return g;
-    }
-    const r = await fetch("/api/game/update", { method:"POST",
-      headers:{ "x-admin-password":state.pw, "content-type":"application/json" }, body:JSON.stringify(patch) });
-    const j = await r.json(); if(!r.ok) throw new Error(j.error || "Update failed"); return j.game;
-  },
-  async deleteGame(id){
-    if(this.mode === "local"){
-      state.catalog.games = state.catalog.games.filter(g => g.id !== id);
-      localStorage.removeItem("sg_file_" + id); ls.set("sg_catalog", state.catalog); return;
-    }
-    const r = await fetch("/api/game/delete", { method:"POST",
-      headers:{ "x-admin-password":state.pw, "content-type":"application/json" }, body:JSON.stringify({ id }) });
-    if(!r.ok) throw new Error((await r.json()).error || "Delete failed");
-  },
-  async saveCategories(categories){
-    if(this.mode === "local"){ state.catalog.categories = categories; ls.set("sg_catalog", state.catalog); return categories; }
-    const r = await fetch("/api/categories", { method:"POST",
-      headers:{ "x-admin-password":state.pw, "content-type":"application/json" }, body:JSON.stringify({ categories }) });
-    const j = await r.json(); if(!r.ok) throw new Error(j.error || "Save failed"); return j.categories;
-  },
-};
-
-/* ------------------------------- state ------------------------------- */
-const state = { catalog:{ games:[], categories:[] }, admin:false, pw:"", filterCat:null, filterSub:null, query:"", editingId:null, pendingHtml:null, draft:null };
-
+const CATALOG = (window.__CATALOG__ && typeof window.__CATALOG__ === "object") ? window.__CATALOG__ : { games: [], categories: [] };
+const state = { catalog: CATALOG, filterCat: null, filterSub: null, query: "" };
 const catById = id => state.catalog.categories.find(c => c.id === id);
 
-/* --------------------------- toasts --------------------------- */
-function toast(msg, kind = ""){
-  const el = document.createElement("div");
-  el.className = "toast " + kind;
-  el.innerHTML = `<span class="d"></span>${esc(msg)}`;
-  $("#toasts").appendChild(el);
-  setTimeout(() => { el.style.transition = ".3s"; el.style.opacity = "0"; el.style.transform = "translateY(8px)"; setTimeout(() => el.remove(), 320); }, 2600);
+function hexToHue(hex){
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex).trim()); if(!m) return null;
+  let h = m[1]; if(h.length===3) h = h.split("").map(x=>x+x).join("");
+  const r=parseInt(h.slice(0,2),16)/255, g=parseInt(h.slice(2,4),16)/255, b=parseInt(h.slice(4,6),16)/255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), d=mx-mn; let hue=0;
+  if(d){ if(mx===r) hue=((g-b)/d)%6; else if(mx===g) hue=(b-r)/d+2; else hue=(r-g)/d+4; hue*=60; if(hue<0) hue+=360; }
+  return Math.round(hue);
+}
+function hueOf(g){
+  if(g.accent){ const m=/hsl\(\s*(\d+)/.exec(g.accent); if(m) return +m[1]; const hh=hexToHue(g.accent); if(hh!=null) return hh; }
+  const c = catById(g.category); return c ? c.hue : 210;
 }
 
-/* --------------------------- rendering --------------------------- */
-function render(){
-  renderHud(); renderChips(); renderGrid(); updateAdminUI();
-}
+const fmtSize = b => !b ? "—" : (b/1024 > 1024 ? (b/1048576).toFixed(1)+" MB" : Math.round(b/1024)+" KB");
+function timeAgo(iso){ const t=new Date(iso).getTime(); if(!t) return "—"; const s=(Date.now()-t)/1000;
+  if(s<60) return "just now"; if(s<3600) return Math.floor(s/60)+"m ago"; if(s<86400) return Math.floor(s/3600)+"h ago";
+  const d=Math.floor(s/86400); return d===1?"yesterday":d+"d ago"; }
+
+function render(){ renderHud(); renderChips(); renderGrid(); }
 
 function renderHud(){
-  const g = state.catalog.games;
-  const cats = state.catalog.categories.length;
-  const last = g.reduce((m,x) => Math.max(m, x.updatedAt||0), 0);
-  const when = last ? timeAgo(last) : "—";
-  $("#hud").innerHTML =
+  const g = state.catalog.games, cats = state.catalog.categories.length;
+  const el = $("#hud");
+  el.innerHTML =
     `<span><b>${g.length}</b> ${g.length===1?"title":"titles"}</span><span class="sep">/</span>`+
-    `<span><b>${cats}</b> categories</span><span class="sep">/</span>`+
-    `<span>updated <b>${when}</b></span>`+
-    (api.mode==="local" ? `<span class="sep">/</span><span style="color:var(--warn)">local preview mode</span>` : "");
+    `<span><b>${cats}</b> categories</span>`+
+    (state.catalog.built ? `<span class="sep">/</span><span>updated <b>${timeAgo(state.catalog.built)}</b></span>` : "");
 }
 
 function renderChips(){
-  const wrap = $("#catChips");
-  const counts = {}; state.catalog.games.forEach(g => counts[g.category] = (counts[g.category]||0)+1);
-  const total = state.catalog.games.length;
-  let html = `<button class="chip" style="--h:210" data-cat="" aria-pressed="${!state.filterCat}"><span>All</span><span class="cnt">${total}</span></button>`;
+  const counts = {}; state.catalog.games.forEach(g => counts[g.category]=(counts[g.category]||0)+1);
+  let html = `<button class="chip" style="--h:210" data-cat="" aria-pressed="${!state.filterCat}"><span>All</span><span class="cnt">${state.catalog.games.length}</span></button>`;
   state.catalog.categories.forEach(c => {
     html += `<button class="chip" style="--h:${c.hue}" data-cat="${c.id}" aria-pressed="${state.filterCat===c.id}">`+
       `<span class="swatch"></span><span>${esc(c.name)}</span><span class="cnt">${counts[c.id]||0}</span></button>`;
   });
-  if(state.admin) html += `<button class="btn ghost sm" id="editCats" style="margin-left:4px">⚙ Edit categories</button>`;
-  wrap.innerHTML = html;
+  $("#catChips").innerHTML = html;
 
-  const sub = $("#subChips");
   const cat = state.filterCat && catById(state.filterCat);
+  const sub = $("#subChips");
   if(cat && cat.subcategories?.length){
-    const subCounts = {};
-    state.catalog.games.filter(g => g.category===cat.id).forEach(g => subCounts[g.subcategory]=(subCounts[g.subcategory]||0)+1);
-    sub.innerHTML = `<button class="chip sub" style="--h:${cat.hue}" data-sub="" aria-pressed="${!state.filterSub}">All ${esc(cat.name)}</button>` +
-      cat.subcategories.map(s => `<button class="chip sub" style="--h:${cat.hue}" data-sub="${s.id}" aria-pressed="${state.filterSub===s.id}">${esc(s.name)}<span class="cnt">${subCounts[s.id]||0}</span></button>`).join("");
+    const sc = {}; state.catalog.games.filter(g=>g.category===cat.id).forEach(g => sc[g.subcategory]=(sc[g.subcategory]||0)+1);
+    sub.innerHTML = `<button class="chip sub" style="--h:${cat.hue}" data-sub="" aria-pressed="${!state.filterSub}">All ${esc(cat.name)}</button>`+
+      cat.subcategories.map(s => `<button class="chip sub" style="--h:${cat.hue}" data-sub="${s.id}" aria-pressed="${state.filterSub===s.id}">${esc(s.name)}<span class="cnt">${sc[s.id]||0}</span></button>`).join("");
   } else sub.innerHTML = "";
 }
 
 function filtered(){
   const q = state.query.trim().toLowerCase();
   return state.catalog.games.filter(g => {
-    if(state.filterCat && g.category !== state.filterCat) return false;
-    if(state.filterSub && g.subcategory !== state.filterSub) return false;
+    if(state.filterCat && g.category!==state.filterCat) return false;
+    if(state.filterSub && g.subcategory!==state.filterSub) return false;
     if(q && !((g.title||"")+" "+(g.description||"")).toLowerCase().includes(q)) return false;
     return true;
   });
@@ -534,24 +374,29 @@ function filtered(){
 
 let previewObserver;
 function renderGrid(){
-  const grid = $("#grid");
-  const list = filtered();
+  const grid = $("#grid"), list = filtered();
   if(!list.length){
-    grid.innerHTML = `<div class="empty"><h3>${state.catalog.games.length? "Nothing here yet" : "Your shelf is empty"}</h3>`+
-      `<p>${state.catalog.games.length? "No titles match this filter." : "Unlock admin and add your first HTML game or app to see it appear here, running live."}</p>`+
-      (state.admin? `<button class="btn primary" onclick="window.__openUpload()">+ Add a title</button>`:
-        `<button class="btn ghost" onclick="window.__openLock()">Unlock admin</button>`)+`</div>`;
+    grid.innerHTML = state.catalog.games.length
+      ? `<div class="empty"><h3>Nothing matches</h3><p>No titles match this filter yet.</p></div>`
+      : `<div class="empty"><h3>Your shelf is empty</h3><p>Drop <b>.html</b> files into the <code>games/</code> folder — one folder per category, an optional folder inside for a subcategory — then redeploy. They'll appear here automatically.</p>
+         <pre style="text-align:left;display:inline-block;margin-top:14px;font-family:'Space Mono';font-size:.72rem;color:var(--muted);line-height:1.7">games/
+  Games/
+    Eiken 2/
+      Verballistic.html
+    Arcade/
+      Golazo.html
+  Apps/
+    Learning/
+      Kotoba.html</pre></div>`;
     return;
   }
   grid.innerHTML = list.map((g,i) => cardHTML(g,i)).join("");
-  // wire cards
+
   if(previewObserver) previewObserver.disconnect();
   previewObserver = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      const fr = e.target.querySelector("iframe");
-      if(!fr) return;
-      if(e.isIntersecting){ if(!fr.src){ fr.src = fr.dataset.src; } }
-      else { if(fr.src){ fr.removeAttribute("src"); } }
+    entries.forEach(e => { const fr = e.target.querySelector("iframe"); if(!fr) return;
+      if(e.isIntersecting){ if(!fr.src) fr.src = fr.dataset.src; }
+      else if(fr.src) fr.removeAttribute("src");
     });
   }, { rootMargin:"400px 0px" });
 
@@ -561,38 +406,25 @@ function renderGrid(){
     scaleIframe(card);
     previewObserver.observe(card);
     const inner = $(".card-inner", card);
-    inner.addEventListener("click", ev => { if(ev.target.closest(".admin-tools")) return; launch(id); });
+    inner.addEventListener("click", () => launch(g));
     if(!matchMedia("(prefers-reduced-motion:reduce)").matches) attachTilt(card, inner);
-    if(state.admin){
-      $(".edit", card)?.addEventListener("click", e => { e.stopPropagation(); openEdit(id); });
-      $(".del", card)?.addEventListener("click", e => { e.stopPropagation(); confirmDelete(id, g?.title); });
-    }
   });
 }
 
-function hueOf(g){
-  if(g.accent){ const m = /hsl\(\s*(\d+)/.exec(g.accent); if(m) return +m[1]; }
-  const c = catById(g.category); return c ? c.hue : 210;
-}
 function cardHTML(g, i){
   const c = catById(g.category);
   const hue = hueOf(g);
-  const url = api.gameUrl(g.id);
   const subName = c?.subcategories?.find(s => s.id === g.subcategory)?.name;
   const delay = Math.min(i*55, 500);
-  return `<article class="card" data-id="${g.id}" style="--h:${hue};animation-delay:${delay}ms">
+  return `<article class="card" data-id="${esc(g.id)}" style="--h:${hue};animation-delay:${delay}ms">
     <div class="card-inner">
       <div class="glow"></div>
       <div class="preview">
         <div class="ph"><div><div class="ring"></div><div class="mono">LOADING</div></div></div>
-        <iframe data-src="${esc(url)}" loading="lazy" scrolling="no" tabindex="-1" title="${esc(g.title)} preview"
+        <iframe data-src="${esc(g.path)}" loading="lazy" scrolling="no" tabindex="-1" title="${esc(g.title)} preview"
           sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"></iframe>
         <div class="scrim"></div>
         <div class="badge-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg></div>
-      </div>
-      <div class="admin-tools">
-        <button class="btn edit" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-        <button class="btn del" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
       </div>
       <div class="meta">
         <div class="tags">
@@ -608,232 +440,27 @@ function cardHTML(g, i){
 }
 
 function scaleIframe(card){
-  const pv = $(".preview", card); const fr = $("iframe", card);
+  const pv = $(".preview", card), fr = $("iframe", card);
   const set = () => { const w = pv.clientWidth; if(w) fr.style.transform = `scale(${w/1280})`; };
   set(); requestAnimationFrame(set);
   if(!card.__ro){ card.__ro = new ResizeObserver(set); card.__ro.observe(pv); }
 }
 
 function attachTilt(card, inner){
-  const glow = $(".glow", card);
-  let raf;
+  const glow = $(".glow", card); let raf;
   card.addEventListener("pointermove", e => {
     const r = card.getBoundingClientRect();
-    const px = (e.clientX - r.left)/r.width, py = (e.clientY - r.top)/r.height;
+    const px=(e.clientX-r.left)/r.width, py=(e.clientY-r.top)/r.height;
     glow.style.setProperty("--mx", px*100+"%"); glow.style.setProperty("--my", py*100+"%");
     cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => {
-      inner.style.transform = `rotateY(${(px-.5)*8}deg) rotateX(${(.5-py)*8}deg) translateZ(0)`;
-    });
+    raf = requestAnimationFrame(() => { inner.style.transform = `rotateY(${(px-.5)*8}deg) rotateX(${(.5-py)*8}deg)`; });
   });
   card.addEventListener("pointerleave", () => { cancelAnimationFrame(raf); inner.style.transform = ""; });
 }
 
-function launch(id){
-  const url = api.gameUrl(id);
-  window.open(url, "_blank", "noopener");
-}
+function launch(g){ if(g?.path) window.open(g.path, "_blank", "noopener"); }
 
-/* --------------------------- helpers --------------------------- */
-function fmtSize(bytes){ if(!bytes) return "—"; const kb=bytes/1024; return kb>1024 ? (kb/1024).toFixed(1)+" MB" : Math.round(kb)+" KB"; }
-function timeAgo(t){ const s=(Date.now()-t)/1000; if(s<60)return "just now"; if(s<3600)return Math.floor(s/60)+"m ago"; if(s<86400)return Math.floor(s/3600)+"h ago"; const d=Math.floor(s/86400); return d===1?"yesterday":d+"d ago"; }
-
-/* --------------------------- modals --------------------------- */
-function openModal(el){ $("#scrim").classList.add("open"); el.classList.add("open"); state._openEl = el; }
-function closeModals(){ $("#scrim").classList.remove("open"); $$(".sheet.open,.dialog.open").forEach(e => e.classList.remove("open")); state._openEl = null; }
-$("#scrim").addEventListener("click", closeModals);
-$$("[data-close]").forEach(b => b.addEventListener("click", closeModals));
-document.addEventListener("keydown", e => { if(e.key==="Escape") closeModals(); });
-
-/* --------------------------- admin unlock --------------------------- */
-window.__openLock = () => { if(state.admin){ leaveAdmin(); return; } openModal($("#pwDialog")); setTimeout(()=>$("#pwInput").focus(),120); };
-$("#lockBtn").addEventListener("click", window.__openLock);
-$("#pwSubmit").addEventListener("click", tryUnlock);
-$("#pwInput").addEventListener("keydown", e => { if(e.key==="Enter") tryUnlock(); });
-async function tryUnlock(){
-  const pw = $("#pwInput").value;
-  const ok = await api.verify(pw).catch(()=>false);
-  if(!ok){ toast("That password didn't match.", "err"); $("#pwInput").select(); return; }
-  state.admin = true; state.pw = pw; document.body.classList.add("admin");
-  $("#lockBtn").innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-1.9"/></svg>`;
-  $("#lockBtn").title = "Admin on — click to exit";
-  $("#pwInput").value = ""; closeModals(); render();
-  toast("Admin unlocked. You can add, edit and remove things now.", "ok");
-}
-function leaveAdmin(){ state.admin=false; state.pw=""; document.body.classList.remove("admin");
-  $("#lockBtn").innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
-  render(); toast("Back to visitor view."); }
-
-/* --------------------------- upload / edit --------------------------- */
-function fillCatSelect(){
-  const cs = state.catalog.categories;
-  $("#fCat").innerHTML = cs.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
-  syncSubSelect();
-}
-function syncSubSelect(){
-  const c = catById($("#fCat").value);
-  const subs = c?.subcategories || [];
-  $("#fSub").innerHTML = `<option value="">— none —</option>` + subs.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("");
-}
-$("#fCat").addEventListener("change", () => { const c = catById($("#fCat").value); if(c && !$("#fHue").dataset.touched){ $("#fHue").value = c.hue; paintHue(); } syncSubSelect(); });
-function paintHue(){ const h=$("#fHue").value; $("#fHueSw").style.background = `hsl(${h} 90% 60%)`; }
-$("#fHue").addEventListener("input", () => { $("#fHue").dataset.touched="1"; paintHue(); });
-
-window.__openUpload = () => openUpload();
-function openUpload(){
-  state.editingId = null; state.pendingHtml = null;
-  $("#upKick").textContent = "NEW TITLE"; $("#upTitle").textContent = "Add a game or app";
-  $("#upSubmit").textContent = "Save title";
-  $("#replaceHint").style.display = "none";
-  $("#fTitle").value=""; $("#fDesc").value=""; $("#dropFile").textContent=""; $("#fileInput").value="";
-  fillCatSelect();
-  const firstCat = state.catalog.categories[0];
-  $("#fHue").value = firstCat? firstCat.hue : 200; delete $("#fHue").dataset.touched; paintHue();
-  openModal($("#upSheet")); setTimeout(()=>$("#fTitle").focus(),150);
-}
-function openEdit(id){
-  const g = state.catalog.games.find(x => x.id===id); if(!g) return;
-  state.editingId = id; state.pendingHtml = null;
-  $("#upKick").textContent = "EDIT TITLE"; $("#upTitle").textContent = "Edit details";
-  $("#upSubmit").textContent = "Save changes";
-  $("#replaceHint").style.display = "block";
-  $("#dropFile").textContent=""; $("#fileInput").value="";
-  fillCatSelect();
-  $("#fTitle").value = g.title||""; $("#fDesc").value = g.description||"";
-  $("#fCat").value = g.category; syncSubSelect(); $("#fSub").value = g.subcategory||"";
-  const c = catById(g.category);
-  if(g.accent){ $("#fHue").dataset.touched="1"; } else delete $("#fHue").dataset.touched;
-  $("#fHue").value = c? c.hue : 200; paintHue();
-  openModal($("#upSheet"));
-}
-
-/* file drop */
-const drop = $("#drop"), fileInput = $("#fileInput");
-drop.addEventListener("click", () => fileInput.click());
-drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("hot"); });
-drop.addEventListener("dragleave", () => drop.classList.remove("hot"));
-drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("hot"); if(e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); });
-fileInput.addEventListener("change", () => { if(fileInput.files[0]) readFile(fileInput.files[0]); });
-function readFile(file){
-  if(!/\.html?$/i.test(file.name) && file.type!=="text/html"){ toast("Please choose an .html file.", "err"); return; }
-  const reader = new FileReader();
-  reader.onload = () => { state.pendingHtml = reader.result;
-    $("#dropFile").textContent = "✓ " + file.name + "  (" + fmtSize(file.size) + ")";
-    if(!$("#fTitle").value) $("#fTitle").value = file.name.replace(/\.html?$/i,"").replace(/[-_]+/g," ").trim();
-  };
-  reader.readAsText(file);
-}
-
-$("#upSubmit").addEventListener("click", submitUpload);
-async function submitUpload(){
-  const title = $("#fTitle").value.trim();
-  if(!title){ toast("Give it a title first.", "err"); $("#fTitle").focus(); return; }
-  if(!state.editingId && state.pendingHtml==null){ toast("Drop an HTML file to add.", "err"); return; }
-  if(api.mode==="cloud" && state.pendingHtml && state.pendingHtml.length > 5.5*1024*1024){
-    toast("That file is over ~5.5 MB and may exceed the upload limit.", "err");
-  }
-  const c = catById($("#fCat").value);
-  const accent = $("#fHue").dataset.touched ? `hsl(${$("#fHue").value} 90% 60%)` : "";
-  const payload = { title, category:$("#fCat").value, subcategory:$("#fSub").value,
-    description:$("#fDesc").value.trim(), accent };
-  $("#upBar").classList.add("show"); $("#upSubmit").disabled = true;
-  try{
-    if(state.editingId){
-      if(state.pendingHtml!=null){ await api.upload({ id:state.editingId, html:state.pendingHtml, ...payload }); }
-      else { await api.updateGame({ id:state.editingId, ...payload }); }
-      toast("Saved.", "ok");
-    } else {
-      await api.upload({ html:state.pendingHtml, ...payload });
-      toast(`“${title}” added.`, "ok");
-    }
-    if(api.mode==="cloud") state.catalog = await api.init();
-    closeModals(); render();
-  }catch(err){ toast(err.message || "Something went wrong.", "err"); }
-  finally{ $("#upBar").classList.remove("show"); $("#upSubmit").disabled = false; }
-}
-
-/* --------------------------- delete --------------------------- */
-let pendingDelete = null;
-function confirmDelete(id, title){
-  pendingDelete = id;
-  if(confirm(`Remove “${title||"this title"}”? This can't be undone.`)) doDelete();
-}
-async function doDelete(){
-  try{ await api.deleteGame(pendingDelete);
-    if(api.mode==="cloud") state.catalog = await api.init();
-    else state.catalog = ls.get("sg_catalog", LOCAL_DEFAULT());
-    toast("Removed.", "ok"); render();
-  }catch(err){ toast(err.message||"Couldn't remove it.", "err"); }
-}
-
-/* --------------------------- categories manager --------------------------- */
-const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || ("c"+Date.now().toString(36));
-function openCats(){
-  state.draft = JSON.parse(JSON.stringify(state.catalog.categories));
-  renderCatEditor(); openModal($("#catSheet"));
-}
-function renderCatEditor(){
-  const body = $("#catBody");
-  body.innerHTML = state.draft.map((c, ci) => `
-    <div class="cat-card" data-ci="${ci}">
-      <div class="cat-top">
-        <div class="hue-swatch" style="background:hsl(${c.hue} 90% 60%)"></div>
-        <input class="c-name" value="${esc(c.name)}" placeholder="Category name" />
-        <button class="mini del c-del" title="Delete category">✕</button>
-      </div>
-      <div class="cat-hue">
-        <span style="font-family:'Space Mono';font-size:.62rem;color:var(--muted-2)">HUE</span>
-        <input type="range" class="c-hue" min="0" max="360" value="${c.hue}" />
-      </div>
-      <div class="subs">
-        ${(c.subcategories||[]).map((s,si)=>`
-          <div class="sub-item" data-si="${si}">
-            <input class="s-name" value="${esc(s.name)}" placeholder="Subcategory" />
-            <button class="mini del s-del" title="Remove">✕</button>
-          </div>`).join("")}
-        <button class="btn ghost sm s-add">+ Subcategory</button>
-      </div>
-    </div>`).join("");
-
-  // wire
-  $$(".cat-card", body).forEach(cc => {
-    const ci = +cc.dataset.ci;
-    $(".c-name", cc).addEventListener("input", e => state.draft[ci].name = e.target.value);
-    $(".c-hue", cc).addEventListener("input", e => { state.draft[ci].hue = +e.target.value; $(".hue-swatch", cc).style.background = `hsl(${e.target.value} 90% 60%)`; });
-    $(".c-del", cc).addEventListener("click", () => { if(confirm(`Delete category “${state.draft[ci].name}”? Titles inside it stay, but lose this label.`)){ state.draft.splice(ci,1); renderCatEditor(); } });
-    $(".s-add", cc).addEventListener("click", () => { (state.draft[ci].subcategories ||= []).push({ id:"", name:"" }); renderCatEditor(); const inputs=$$(".s-name", cc); inputs[inputs.length-1]?.focus(); });
-    $$(".sub-item", cc).forEach(si => {
-      const sidx = +si.dataset.si;
-      $(".s-name", si).addEventListener("input", e => state.draft[ci].subcategories[sidx].name = e.target.value);
-      $(".s-del", si).addEventListener("click", () => { state.draft[ci].subcategories.splice(sidx,1); renderCatEditor(); });
-    });
-  });
-}
-$("#catAdd").addEventListener("click", () => { state.draft.push({ id:"", name:"New category", hue:Math.floor(Math.random()*360), subcategories:[] }); renderCatEditor(); $("#catBody").scrollTop = $("#catBody").scrollHeight; });
-$("#catSave").addEventListener("click", saveCats);
-async function saveCats(){
-  // finalise ids + drop blanks
-  const clean = state.draft
-    .filter(c => (c.name||"").trim())
-    .map(c => ({ id: c.id || slug(c.name), name:c.name.trim(), hue:c.hue,
-      subcategories:(c.subcategories||[]).filter(s=>(s.name||"").trim()).map(s=>({ id:s.id||slug(s.name), name:s.name.trim() })) }));
-  try{ state.catalog.categories = await api.saveCategories(clean);
-    // keep filters valid after structural edits
-    const cat = state.filterCat && catById(state.filterCat);
-    if(state.filterCat && !cat){ state.filterCat=null; state.filterSub=null; }
-    else if(cat && state.filterSub && !cat.subcategories?.some(s=>s.id===state.filterSub)){ state.filterSub=null; }
-    toast("Categories saved.", "ok"); closeModals(); render();
-  }catch(err){ toast(err.message||"Couldn't save.", "err"); }
-}
-
-/* the "+ Add title" button and the "Edit categories" chip only exist in admin */
-let railAdd;
-function updateAdminUI(){
-  if(railAdd) railAdd.style.display = state.admin ? "inline-flex" : "none";
-  $("#editCats")?.addEventListener("click", openCats);
-}
-
-/* --------------------------- chip / search events --------------------------- */
+/* --------------------------- events --------------------------- */
 $("#catChips").addEventListener("click", e => {
   const b = e.target.closest(".chip[data-cat]"); if(!b) return;
   state.filterCat = b.dataset.cat || null; state.filterSub = null; render();
@@ -845,29 +472,12 @@ $("#subChips").addEventListener("click", e => {
 let searchT;
 $("#search").addEventListener("input", e => { clearTimeout(searchT); searchT = setTimeout(() => { state.query = e.target.value; renderGrid(); }, 130); });
 
-/* also allow header "add" via keyboard shortcut when admin */
-document.addEventListener("keydown", e => { if(state.admin && (e.key==="u"||e.key==="U") && (e.metaKey||e.ctrlKey)){ e.preventDefault(); openUpload(); } });
-
 /* --------------------------- boot --------------------------- */
-// "+ Add title" button lives in the filter rail, shown only to admins
-railAdd = document.createElement("button");
-railAdd.className = "btn primary sm";
-railAdd.textContent = "+ Add title";
-railAdd.style.cssText = "display:none;order:-1";
-railAdd.addEventListener("click", openUpload);
-$(".rail").insertBefore(railAdd, $(".search"));
+if(state.catalog.title) { const b = $(".brand b"); if(b) b.textContent = state.catalog.title; }
+if(state.catalog.tagline){ const t = $(".tagline"); if(t) t.textContent = state.catalog.tagline; }
+render();
+initThree();
 
-(async function boot(){
-  state.catalog = await api.init();
-  if(api.mode === "local"){ $("#modePill").classList.add("show"); $("#modeText").textContent = "local preview"; }
-  render();
-  initThree();
-})();
-
-/* =====================================================================
- * Ambient 3D background (Three.js). Loaded from CDN; if it fails,
- * the page still works — the gradient veil carries the mood.
- * ===================================================================== */
 async function initThree(){
   if(matchMedia("(prefers-reduced-motion:reduce)").matches) return;
   let THREE;

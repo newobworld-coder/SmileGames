@@ -1,0 +1,5 @@
+node_modules/
+.netlify/
+_core.js
+_fapp.mjs
+_fsmoke.mjs
