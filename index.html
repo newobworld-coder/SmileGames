@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Smile Games — Arcade</title>
+<meta name="description" content="A hand-built collection of games and apps. Pick one and play." />
+<meta name="theme-color" content="#070713" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23070713'/%3E%3Cpath d='M28 40a22 22 0 0 0 44 0' fill='none' stroke='%2338E1FF' stroke-width='7' stroke-linecap='round'/%3E%3Ccircle cx='36' cy='30' r='5' fill='%23FF4DD8'/%3E%3Ccircle cx='64' cy='30' r='5' fill='%23FF4DD8'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    --void:#070713; --void-2:#0b0b1c;
+    --panel:rgba(20,20,40,.55); --panel-2:rgba(28,28,54,.72); --panel-solid:#12122a;
+    --stroke:rgba(150,150,220,.14); --stroke-2:rgba(150,150,220,.26);
+    --ink:#ECEBFF; --muted:#928fc4; --muted-2:#6a6a99;
+    --cyan:#38E1FF; --magenta:#FF4DD8; --ok:#57e8a0; --danger:#ff5d73; --warn:#ffcf5d;
+    --radius:20px; --radius-sm:12px;
+    --shadow:0 24px 60px -20px rgba(0,0,0,.7);
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:Inter,system-ui,sans-serif; color:var(--ink);
+    background:var(--void); overflow-x:hidden; min-height:100dvh;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* layered atmosphere behind everything */
+  #bg{position:fixed; inset:0; z-index:0; display:block}
+  .veil{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    background:
+      radial-gradient(1200px 700px at 78% -8%, rgba(255,77,216,.16), transparent 60%),
+      radial-gradient(1100px 800px at 10% 4%, rgba(56,225,255,.16), transparent 58%),
+      radial-gradient(900px 900px at 50% 120%, rgba(120,80,255,.14), transparent 60%),
+      linear-gradient(180deg, rgba(7,7,19,.28) 0%, rgba(7,7,19,.55) 42%, var(--void) 100%);
+  }
+  .grain{position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .wrap{position:relative; z-index:2; max-width:1360px; margin:0 auto; padding:0 clamp(16px,4vw,40px)}
+
+  /* ---------- top bar ---------- */
+  .topbar{position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:16px;
+    padding:14px 0; margin-bottom:8px;}
+  .topbar::before{content:""; position:absolute; inset:0 -50vw; background:linear-gradient(180deg,rgba(7,7,19,.72),rgba(7,7,19,0));
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); mask:linear-gradient(180deg,#000 55%,transparent); z-index:-1}
+  .brand{display:flex; align-items:center; gap:12px; font-family:"Space Grotesk"; font-weight:700; letter-spacing:.02em}
+  .brand .logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+    background:radial-gradient(120% 120% at 30% 20%, rgba(56,225,255,.4), rgba(255,77,216,.35) 70%, transparent);
+    border:1px solid var(--stroke-2); box-shadow:inset 0 0 24px rgba(120,120,255,.25)}
+  .brand .logo svg{width:24px;height:24px}
+  .brand b{font-size:1.02rem}
+  .brand span{display:block;font-family:"Space Mono";font-size:.62rem;letter-spacing:.34em;color:var(--muted);margin-top:1px}
+  .spacer{flex:1}
+  .mode-pill{font-family:"Space Mono";font-size:.62rem;letter-spacing:.14em;padding:6px 11px;border-radius:999px;
+    border:1px solid var(--stroke); color:var(--muted); display:none; align-items:center; gap:7px}
+  .mode-pill.show{display:inline-flex}
+  .mode-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--warn);box-shadow:0 0 10px var(--warn)}
+  .btn{font-family:"Space Grotesk";font-weight:600;font-size:.86rem;cursor:pointer;border-radius:12px;
+    border:1px solid var(--stroke-2); background:var(--panel); color:var(--ink); padding:10px 15px;
+    display:inline-flex;align-items:center;gap:8px;transition:.22s var(--ease);backdrop-filter:blur(8px)}
+  .btn:hover{border-color:var(--stroke-2);transform:translateY(-1px);background:var(--panel-2)}
+  .btn svg{width:16px;height:16px}
+  .btn.primary{background:linear-gradient(135deg,var(--cyan),var(--magenta));color:#0a0a18;border:none;
+    box-shadow:0 10px 30px -10px rgba(255,77,216,.6)}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.ghost{background:transparent}
+  .btn.danger{color:var(--danger);border-color:rgba(255,93,115,.4)}
+  .btn.danger:hover{background:rgba(255,93,115,.12)}
+  .btn.sm{padding:7px 11px;font-size:.78rem;border-radius:10px}
+  .btn.icon{padding:9px;border-radius:11px}
+
+  /* ---------- hero ---------- */
+  .hero{padding:clamp(30px,7vw,84px) 0 clamp(20px,4vw,40px)}
+  .eyebrow{font-family:"Space Mono";font-size:.72rem;letter-spacing:.42em;color:var(--cyan);
+    text-transform:uppercase;margin:0 0 18px;display:flex;align-items:center;gap:12px}
+  .eyebrow::before{content:"";width:34px;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}
+  h1{font-family:"Space Grotesk";font-weight:700;margin:0;line-height:.92;
+    font-size:clamp(2.9rem,10vw,6.6rem);letter-spacing:-.02em}
+  h1 .g{background:linear-gradient(120deg,var(--cyan) 10%,#b58cff 48%,var(--magenta) 90%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .tagline{margin:20px 0 0;max-width:44ch;color:var(--muted);font-size:clamp(1rem,2vw,1.18rem);line-height:1.5}
+  .hud{margin-top:30px;display:flex;flex-wrap:wrap;gap:10px 22px;font-family:"Space Mono";font-size:.78rem;color:var(--muted-2)}
+  .hud b{color:var(--ink)}
+  .hud .sep{color:var(--stroke-2)}
+
+  /* ---------- filter rail ---------- */
+  .controls{position:sticky;top:66px;z-index:30;padding:12px 0;margin:6px 0 22px}
+  .controls::before{content:"";position:absolute;inset:0 -50vw;background:rgba(7,7,19,.55);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--stroke);z-index:-1;mask:linear-gradient(180deg,#000,#000 88%,transparent)}
+  .rail{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .search{position:relative;flex:1;min-width:180px;max-width:320px;margin-left:auto}
+  .search input{width:100%;font-family:Inter;font-size:.86rem;color:var(--ink);
+    background:var(--panel);border:1px solid var(--stroke);border-radius:11px;padding:10px 12px 10px 34px;outline:none}
+  .search input:focus{border-color:var(--stroke-2)}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted-2)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font-family:"Space Grotesk";font-weight:500;font-size:.82rem;cursor:pointer;
+    padding:8px 14px;border-radius:999px;border:1px solid var(--stroke);color:var(--muted);
+    background:var(--panel);transition:.2s var(--ease);white-space:nowrap;display:inline-flex;align-items:center;gap:8px}
+  .chip:hover{color:var(--ink);border-color:var(--stroke-2)}
+  .chip .cnt{font-family:"Space Mono";font-size:.68rem;opacity:.7}
+  .chip .swatch{width:8px;height:8px;border-radius:50%;background:hsl(var(--h,200) 90% 62%);box-shadow:0 0 8px hsl(var(--h,200) 90% 62%)}
+  .chip[aria-pressed="true"]{color:#0a0a18;background:hsl(var(--h,200) 90% 64%);border-color:transparent;
+    box-shadow:0 8px 24px -8px hsl(var(--h,200) 90% 50% / .8)}
+  .chip[aria-pressed="true"] .swatch{background:#0a0a18;box-shadow:none}
+  .chip[aria-pressed="true"] .cnt{opacity:.8}
+  .subrail{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .subrail:empty{display:none}
+  .chip.sub{font-size:.76rem;padding:6px 12px;background:transparent}
+
+  /* ---------- grid ---------- */
+  .grid{display:grid;gap:clamp(16px,2vw,24px);
+    grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));
+    padding-bottom:80px}
+  .card{position:relative;border-radius:var(--radius);perspective:1200px;opacity:0;transform:translateY(18px);
+    animation:rise .7s var(--ease) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .card-inner{position:relative;border-radius:var(--radius);overflow:hidden;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--stroke);cursor:pointer;
+    transition:transform .18s var(--ease),border-color .3s,box-shadow .3s;
+    transform-style:preserve-3d;box-shadow:var(--shadow)}
+  .card-inner::after{content:"";position:absolute;inset:0;border-radius:var(--radius);pointer-events:none;
+    box-shadow:inset 0 0 0 1px hsl(var(--h,200) 90% 60% / 0);transition:box-shadow .3s;z-index:5}
+  .card:hover .card-inner{border-color:hsl(var(--h,200) 90% 60% / .5);
+    box-shadow:0 30px 70px -22px hsl(var(--h,200) 85% 40% / .55), var(--shadow)}
+  .card:hover .card-inner::after{box-shadow:inset 0 0 0 1px hsl(var(--h,200) 90% 62% / .6)}
+  .glow{position:absolute;inset:0;border-radius:var(--radius);opacity:0;transition:opacity .3s;z-index:6;pointer-events:none;
+    background:radial-gradient(200px 200px at var(--mx,50%) var(--my,50%), hsl(var(--h,200) 95% 65% / .18), transparent 70%)}
+  .card:hover .glow{opacity:1}
+
+  .preview{position:relative;aspect-ratio:16/10;overflow:hidden;background:
+    radial-gradient(120% 140% at 50% 0%, hsl(var(--h,200) 40% 16%), var(--void-2) 70%)}
+  .preview iframe{position:absolute;top:0;left:0;width:1280px;height:800px;border:0;
+    transform-origin:top left;pointer-events:none;background:var(--void-2)}
+  .preview .scrim{position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:linear-gradient(180deg,transparent 30%,rgba(8,8,20,.35) 70%,rgba(8,8,20,.9));
+    mix-blend-mode:normal}
+  .preview .ph{position:absolute;inset:0;display:grid;place-items:center;z-index:1;color:var(--muted-2)}
+  .preview .ph .mono{font-family:"Space Mono";font-size:.66rem;letter-spacing:.24em;margin-top:8px}
+  .preview .ph .ring{width:34px;height:34px;border-radius:50%;border:2px solid hsl(var(--h,200) 90% 60% / .35);
+    border-top-color:hsl(var(--h,200) 90% 65%);animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .badge-play{position:absolute;z-index:3;top:12px;right:12px;width:38px;height:38px;border-radius:50%;
+    display:grid;place-items:center;background:hsl(var(--h,200) 90% 60% / .18);border:1px solid hsl(var(--h,200) 90% 65% / .5);
+    color:hsl(var(--h,200) 95% 78%);opacity:0;transform:scale(.85) translateZ(40px);transition:.3s var(--ease);backdrop-filter:blur(6px)}
+  .card:hover .badge-play{opacity:1;transform:scale(1) translateZ(40px)}
+  .badge-play svg{width:16px;height:16px;margin-left:2px}
+
+  .meta{position:relative;z-index:3;padding:15px 16px 16px;transform:translateZ(30px)}
+  .tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:9px}
+  .tag{font-family:"Space Mono";font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;
+    padding:4px 8px;border-radius:7px;border:1px solid hsl(var(--h,200) 60% 50% / .35);
+    color:hsl(var(--h,200) 90% 78%);background:hsl(var(--h,200) 70% 40% / .12)}
+  .tag.sub{border-color:var(--stroke);color:var(--muted);background:transparent}
+  .card h3{font-family:"Space Grotesk";font-weight:700;font-size:1.06rem;margin:0;letter-spacing:-.01em}
+  .card .desc{margin:6px 0 0;color:var(--muted);font-size:.83rem;line-height:1.45;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card .foot{margin-top:11px;display:flex;align-items:center;gap:8px;font-family:"Space Mono";font-size:.64rem;color:var(--muted-2)}
+
+  .admin-tools{position:absolute;z-index:8;top:12px;left:12px;display:none;gap:6px}
+  body.admin .admin-tools{display:flex}
+  .admin-tools .btn{padding:7px;border-radius:9px;background:rgba(8,8,20,.7)}
+
+  /* ---------- empty state ---------- */
+  .empty{grid-column:1/-1;text-align:center;padding:80px 20px;border:1px dashed var(--stroke-2);
+    border-radius:var(--radius);background:var(--panel)}
+  .empty h3{font-family:"Space Grotesk";font-size:1.3rem;margin:0 0 8px}
+  .empty p{color:var(--muted);margin:0 auto 20px;max-width:40ch}
+
+  /* ---------- modal / drawer ---------- */
+  .scrim-bg{position:fixed;inset:0;z-index:80;background:rgba(4,4,12,.66);backdrop-filter:blur(6px);
+    opacity:0;pointer-events:none;transition:.28s var(--ease)}
+  .scrim-bg.open{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;z-index:81;top:0;right:0;height:100dvh;width:min(480px,100vw);
+    background:var(--panel-solid);border-left:1px solid var(--stroke-2);
+    box-shadow:-30px 0 80px -20px rgba(0,0,0,.8);transform:translateX(100%);transition:.34s var(--ease);
+    display:flex;flex-direction:column;overflow:hidden}
+  .sheet.open{transform:none}
+  .sheet.wide{width:min(640px,100vw)}
+  .sheet-head{display:flex;align-items:center;gap:12px;padding:20px 22px;border-bottom:1px solid var(--stroke)}
+  .sheet-head h2{font-family:"Space Grotesk";font-size:1.15rem;margin:0}
+  .sheet-head .k{font-family:"Space Mono";font-size:.6rem;letter-spacing:.22em;color:var(--muted-2);display:block;margin-bottom:3px}
+  .sheet-body{padding:22px;overflow-y:auto;flex:1}
+  .sheet-foot{padding:16px 22px;border-top:1px solid var(--stroke);display:flex;gap:10px;justify-content:flex-end}
+
+  /* centered dialog variant */
+  .dialog{position:fixed;z-index:81;top:50%;left:50%;transform:translate(-50%,-46%) scale(.98);
+    width:min(420px,92vw);background:var(--panel-solid);border:1px solid var(--stroke-2);border-radius:var(--radius);
+    box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.26s var(--ease);overflow:hidden}
+  .dialog.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .dialog .sheet-body{max-height:70vh}
+
+  /* form bits */
+  label.f{display:block;margin-bottom:16px}
+  label.f > span{display:block;font-family:"Space Mono";font-size:.64rem;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .inp,select.inp,textarea.inp{width:100%;font-family:Inter;font-size:.9rem;color:var(--ink);
+    background:rgba(10,10,24,.6);border:1px solid var(--stroke);border-radius:11px;padding:11px 12px;outline:none;transition:.2s}
+  .inp:focus{border-color:var(--cyan)}
+  textarea.inp{resize:vertical;min-height:72px}
+  select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23928fc4' stroke-width='2'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+  .row{display:flex;gap:12px}
+  .row > *{flex:1}
+  .drop{border:1.5px dashed var(--stroke-2);border-radius:var(--radius-sm);padding:26px 18px;text-align:center;
+    color:var(--muted);cursor:pointer;transition:.2s;background:rgba(10,10,24,.4)}
+  .drop:hover,.drop.hot{border-color:var(--cyan);color:var(--ink);background:hsl(190 80% 50% / .06)}
+  .drop b{color:var(--ink);font-weight:600}
+  .drop .file{display:block;margin-top:8px;font-family:"Space Mono";font-size:.72rem;color:var(--cyan)}
+  .hue-pick{display:flex;align-items:center;gap:12px}
+  .hue-pick input[type=range]{flex:1;accent-color:hsl(var(--h,200) 90% 60%)}
+  .hue-swatch{width:30px;height:30px;border-radius:9px;border:1px solid var(--stroke-2);background:hsl(var(--h,200) 90% 60%)}
+
+  /* category manager */
+  .cat-card{border:1px solid var(--stroke);border-radius:14px;padding:14px;margin-bottom:14px;background:rgba(10,10,24,.35)}
+  .cat-top{display:flex;align-items:center;gap:10px}
+  .cat-top .hue-swatch{width:22px;height:22px;border-radius:7px}
+  .cat-top input{flex:1;font-family:"Space Grotesk";font-weight:600;font-size:.95rem;background:transparent;border:none;color:var(--ink);outline:none;border-bottom:1px solid transparent;padding:2px 0}
+  .cat-top input:focus{border-bottom-color:var(--stroke-2)}
+  .cat-hue{display:flex;align-items:center;gap:8px;margin:10px 0}
+  .cat-hue input[type=range]{flex:1}
+  .subs{margin-top:6px;padding-left:32px}
+  .sub-item{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .sub-item input{flex:1;font-family:Inter;font-size:.82rem;background:rgba(10,10,24,.5);
+    border:1px solid var(--stroke);border-radius:8px;color:var(--ink);padding:6px 9px;outline:none}
+  .sub-item input:focus{border-color:var(--stroke-2)}
+  .mini{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;cursor:pointer;
+    border:1px solid var(--stroke);background:transparent;color:var(--muted)}
+  .mini:hover{color:var(--ink);border-color:var(--stroke-2)}
+  .mini.del:hover{color:var(--danger);border-color:rgba(255,93,115,.4)}
+
+  /* toast */
+  .toasts{position:fixed;z-index:99;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;align-items:center}
+  .toast{font-family:"Space Grotesk";font-weight:500;font-size:.85rem;padding:11px 16px;border-radius:12px;
+    background:var(--panel-solid);border:1px solid var(--stroke-2);box-shadow:var(--shadow);
+    display:flex;align-items:center;gap:9px;animation:pop .3s var(--ease);max-width:90vw}
+  .toast.ok{border-color:rgba(87,232,160,.4)} .toast.ok .d{background:var(--ok)}
+  .toast.err{border-color:rgba(255,93,115,.4)} .toast.err .d{background:var(--danger)}
+  .toast .d{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px currentColor;flex:none}
+  @keyframes pop{from{opacity:0;transform:translateY(10px)}}
+
+  .up-progress{height:3px;background:var(--stroke);border-radius:2px;overflow:hidden;margin-top:14px;display:none}
+  .up-progress.show{display:block}
+  .up-progress i{display:block;height:100%;width:30%;background:linear-gradient(90deg,var(--cyan),var(--magenta));
+    animation:load 1.1s var(--ease) infinite}
+  @keyframes load{0%{margin-left:-30%}100%{margin-left:100%}}
+
+  .hint{font-size:.76rem;color:var(--muted-2);margin-top:-6px;margin-bottom:14px;line-height:1.4}
+  .divider{height:1px;background:var(--stroke);margin:18px 0}
+
+  @media (max-width:560px){
+    .brand span{display:none}
+    .controls{top:60px}
+    .search{max-width:none;order:3;margin-left:0;width:100%}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;transition-duration:.05ms !important}
+    .card{opacity:1;transform:none}
+  }
+  :focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:6px}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="veil"></div>
+<div class="grain"></div>
+
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo"><svg viewBox="0 0 100 100"><path d="M26 42a24 24 0 0 0 48 0" fill="none" stroke="#38E1FF" stroke-width="8" stroke-linecap="round"/><circle cx="34" cy="30" r="5.5" fill="#FF4DD8"/><circle cx="66" cy="30" r="5.5" fill="#FF4DD8"/></svg></span>
+      <div><b>SMILE GAMES</b><span>ARCADE · v1</span></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="mode-pill" id="modePill"><span class="dot"></span><span id="modeText">local preview</span></div>
+    <button class="btn ghost icon" id="lockBtn" title="Admin" aria-label="Unlock admin">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    </button>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">Hand-built · single file · runs anywhere</p>
+    <h1>Press start.<br><span class="g">Everything you made.</span></h1>
+    <p class="tagline">A living shelf for your games and apps. Each tile is the real thing running in miniature — tap to launch it full-screen in a new tab.</p>
+    <div class="hud" id="hud"></div>
+  </section>
+
+  <section class="controls">
+    <div class="rail">
+      <div class="chips" id="catChips"></div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input id="search" type="search" placeholder="Search titles…" autocomplete="off" />
+      </div>
+    </div>
+    <div class="subrail" id="subChips"></div>
+  </section>
+
+  <main class="grid" id="grid"></main>
+</div>
+
+<!-- ============ admin: password ============ -->
+<div class="scrim-bg" id="scrim"></div>
+<div class="dialog" id="pwDialog" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+  <div class="sheet-head"><div><span class="k">RESTRICTED</span><h2 id="pwTitle">Admin access</h2></div></div>
+  <div class="sheet-body">
+    <p class="hint">Enter the password to add, edit, and remove titles and categories.</p>
+    <label class="f"><span>Password</span>
+      <input class="inp" id="pwInput" type="password" placeholder="••••••••" autocomplete="off" />
+    </label>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn ghost" data-close>Cancel</button>
+    <button class="btn primary" id="pwSubmit">Unlock</button>
+  </div>
+</div>
+
+<!-- ============ admin: upload / edit ============ -->
+<div class="sheet" id="upSheet" role="dialog" aria-modal="true" aria-labelledby="upTitle">
+  <div class="sheet-head"><div><span class="k" id="upKick">NEW TITLE</span><h2 id="upTitle">Add a game or app</h2></div><div class="spacer"></div><button class="btn ghost icon" data-close aria-label="Close">✕</button></div>
+  <div class="sheet-body">
+    <div class="drop" id="drop">
+      <b>Drop an HTML file here</b> or click to choose<br>
+      <span style="font-size:.8rem;color:var(--muted-2)">one self-contained .html file</span>
+      <span class="file" id="dropFile"></span>
+      <input type="file" id="fileInput" accept=".html,text/html" hidden />
+    </div>
+    <div class="hint" id="replaceHint" style="display:none">Editing details only. Drop a new file above to replace the game itself.</div>
+    <div class="divider"></div>
+    <label class="f"><span>Title</span><input class="inp" id="fTitle" placeholder="e.g. VERBALLISTIC" /></label>
+    <div class="row">
+      <label class="f"><span>Category</span><select class="inp" id="fCat"></select></label>
+      <label class="f"><span>Subcategory</span><select class="inp" id="fSub"></select></label>
+    </div>
+    <label class="f"><span>Description</span><textarea class="inp" id="fDesc" placeholder="One line about it (optional)"></textarea></label>
+    <label class="f"><span>Accent colour</span>
+      <div class="hue-pick"><input type="range" id="fHue" min="0" max="360" value="200" /><div class="hue-swatch" id="fHueSw"></div></div>
+    </label>
+    <div class="hint">Leave the accent to match the category, or nudge it to give this tile its own glow.</div>
+    <div class="up-progress" id="upBar"><i></i></div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn ghost" data-close>Cancel</button>
+    <button class="btn primary" id="upSubmit">Save title</button>
+  </div>
+</div>
+
+<!-- ============ admin: categories ============ -->
+<div class="sheet wide" id="catSheet" role="dialog" aria-modal="true" aria-labelledby="catTitle">
+  <div class="sheet-head"><div><span class="k">STRUCTURE</span><h2 id="catTitle">Categories</h2></div><div class="spacer"></div><button class="btn ghost icon" data-close aria-label="Close">✕</button></div>
+  <div class="sheet-body" id="catBody"></div>
+  <div class="sheet-foot">
+    <button class="btn ghost" id="catAdd">+ Add category</button>
+    <div class="spacer" style="flex:1"></div>
+    <button class="btn ghost" data-close>Cancel</button>
+    <button class="btn primary" id="catSave">Save structure</button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script type="module">
+/* =====================================================================
+ * SMILE GAMES — frontend
+ * Works in two modes:
+ *   • cloud  — talks to the Netlify Function (shared, persistent for all)
+ *   • local  — falls back to this browser's storage so you can preview
+ *              the page by just opening index.html (not shared)
+ * ===================================================================== */
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = (s = "") => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* ------------- storage layer (cloud + local fallback) ------------- */
+const LOCAL_PW = "SmileGames92"; // used only for local-preview convenience
+const ls = {
+  get(k, d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch{ return d } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true }catch{ return false } },
+};
+const LOCAL_DEFAULT = () => ({
+  games: [],
+  categories: [
+    { id:"games", name:"Games", hue:190, subcategories:[
+      {id:"arcade",name:"Arcade"},{id:"eiken-2",name:"Eiken 2"},{id:"eiken-pre-2",name:"Eiken Pre-2"},
+      {id:"eiken-3",name:"Eiken 3"},{id:"eiken-4",name:"Eiken 4"}]},
+    { id:"apps", name:"Apps", hue:315, subcategories:[
+      {id:"learning",name:"Learning"},{id:"tools",name:"Tools"}]},
+  ],
+});
+const blobUrls = new Map();
+
+const api = {
+  mode: "cloud",
+  async init(){
+    try{
+      const r = await fetch("/api/catalog", { cache:"no-store" });
+      if(!r.ok) throw new Error("no api");
+      this.mode = "cloud";
+      return await r.json();
+    }catch{
+      this.mode = "local";
+      return ls.get("sg_catalog", LOCAL_DEFAULT());
+    }
+  },
+  gameUrl(id){
+    if(this.mode === "cloud") return "/api/game/" + encodeURIComponent(id);
+    if(blobUrls.has(id)) return blobUrls.get(id);
+    const html = ls.get("sg_file_" + id, "");
+    const url = URL.createObjectURL(new Blob([html], { type:"text/html" }));
+    blobUrls.set(id, url); return url;
+  },
+  async verify(pw){
+    if(this.mode === "local") return pw === LOCAL_PW;
+    const r = await fetch("/api/verify", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ password:pw }) });
+    return !!(await r.json()).ok;
+  },
+  async upload({ id, title, category, subcategory, description, accent, html }){
+    if(this.mode === "local"){
+      const cat = state.catalog;
+      const gid = id || ("g_" + Date.now().toString(36) + Math.random().toString(36).slice(2,7));
+      if(html != null){
+        if(!ls.set("sg_file_" + gid, html)) throw new Error("This browser's storage is full — deploy to Netlify for unlimited space.");
+        blobUrls.delete(gid);
+      }
+      const now = Date.now();
+      const rec = { id:gid, title, category, subcategory, description, accent, size:(html||"").length, updatedAt:now };
+      const i = cat.games.findIndex(g => g.id === gid);
+      if(i >= 0){ rec.createdAt = cat.games[i].createdAt || now; rec.size = html==null ? cat.games[i].size : rec.size; cat.games[i] = rec; }
+      else { rec.createdAt = now; cat.games.unshift(rec); }
+      ls.set("sg_catalog", cat);
+      return rec;
+    }
+    const qs = new URLSearchParams({ title, category, subcategory, description, accent });
+    if(id) qs.set("id", id);
+    const r = await fetch("/api/upload?" + qs, { method:"POST",
+      headers:{ "x-admin-password":state.pw, "content-type":"text/html" }, body:html });
+    const j = await r.json(); if(!r.ok) throw new Error(j.error || "Upload failed");
+    return j.game;
+  },
+  async updateGame(patch){
+    if(this.mode === "local"){
+      const g = state.catalog.games.find(x => x.id === patch.id);
+      Object.assign(g, patch); g.updatedAt = Date.now(); ls.set("sg_catalog", state.catalog); return g;
+    }
+    const r = await fetch("/api/game/update", { method:"POST",
+      headers:{ "x-admin-password":state.pw, "content-type":"application/json" }, body:JSON.stringify(patch) });
+    const j = await r.json(); if(!r.ok) throw new Error(j.error || "Update failed"); return j.game;
+  },
+  async deleteGame(id){
+    if(this.mode === "local"){
+      state.catalog.games = state.catalog.games.filter(g => g.id !== id);
+      localStorage.removeItem("sg_file_" + id); ls.set("sg_catalog", state.catalog); return;
+    }
+    const r = await fetch("/api/game/delete", { method:"POST",
+      headers:{ "x-admin-password":state.pw, "content-type":"application/json" }, body:JSON.stringify({ id }) });
+    if(!r.ok) throw new Error((await r.json()).error || "Delete failed");
+  },
+  async saveCategories(categories){
+    if(this.mode === "local"){ state.catalog.categories = categories; ls.set("sg_catalog", state.catalog); return categories; }
+    const r = await fetch("/api/categories", { method:"POST",
+      headers:{ "x-admin-password":state.pw, "content-type":"application/json" }, body:JSON.stringify({ categories }) });
+    const j = await r.json(); if(!r.ok) throw new Error(j.error || "Save failed"); return j.categories;
+  },
+};
+
+/* ------------------------------- state ------------------------------- */
+const state = { catalog:{ games:[], categories:[] }, admin:false, pw:"", filterCat:null, filterSub:null, query:"", editingId:null, pendingHtml:null, draft:null };
+
+const catById = id => state.catalog.categories.find(c => c.id === id);
+
+/* --------------------------- toasts --------------------------- */
+function toast(msg, kind = ""){
+  const el = document.createElement("div");
+  el.className = "toast " + kind;
+  el.innerHTML = `<span class="d"></span>${esc(msg)}`;
+  $("#toasts").appendChild(el);
+  setTimeout(() => { el.style.transition = ".3s"; el.style.opacity = "0"; el.style.transform = "translateY(8px)"; setTimeout(() => el.remove(), 320); }, 2600);
+}
+
+/* --------------------------- rendering --------------------------- */
+function render(){
+  renderHud(); renderChips(); renderGrid(); updateAdminUI();
+}
+
+function renderHud(){
+  const g = state.catalog.games;
+  const cats = state.catalog.categories.length;
+  const last = g.reduce((m,x) => Math.max(m, x.updatedAt||0), 0);
+  const when = last ? timeAgo(last) : "—";
+  $("#hud").innerHTML =
+    `<span><b>${g.length}</b> ${g.length===1?"title":"titles"}</span><span class="sep">/</span>`+
+    `<span><b>${cats}</b> categories</span><span class="sep">/</span>`+
+    `<span>updated <b>${when}</b></span>`+
+    (api.mode==="local" ? `<span class="sep">/</span><span style="color:var(--warn)">local preview mode</span>` : "");
+}
+
+function renderChips(){
+  const wrap = $("#catChips");
+  const counts = {}; state.catalog.games.forEach(g => counts[g.category] = (counts[g.category]||0)+1);
+  const total = state.catalog.games.length;
+  let html = `<button class="chip" style="--h:210" data-cat="" aria-pressed="${!state.filterCat}"><span>All</span><span class="cnt">${total}</span></button>`;
+  state.catalog.categories.forEach(c => {
+    html += `<button class="chip" style="--h:${c.hue}" data-cat="${c.id}" aria-pressed="${state.filterCat===c.id}">`+
+      `<span class="swatch"></span><span>${esc(c.name)}</span><span class="cnt">${counts[c.id]||0}</span></button>`;
+  });
+  if(state.admin) html += `<button class="btn ghost sm" id="editCats" style="margin-left:4px">⚙ Edit categories</button>`;
+  wrap.innerHTML = html;
+
+  const sub = $("#subChips");
+  const cat = state.filterCat && catById(state.filterCat);
+  if(cat && cat.subcategories?.length){
+    const subCounts = {};
+    state.catalog.games.filter(g => g.category===cat.id).forEach(g => subCounts[g.subcategory]=(subCounts[g.subcategory]||0)+1);
+    sub.innerHTML = `<button class="chip sub" style="--h:${cat.hue}" data-sub="" aria-pressed="${!state.filterSub}">All ${esc(cat.name)}</button>` +
+      cat.subcategories.map(s => `<button class="chip sub" style="--h:${cat.hue}" data-sub="${s.id}" aria-pressed="${state.filterSub===s.id}">${esc(s.name)}<span class="cnt">${subCounts[s.id]||0}</span></button>`).join("");
+  } else sub.innerHTML = "";
+}
+
+function filtered(){
+  const q = state.query.trim().toLowerCase();
+  return state.catalog.games.filter(g => {
+    if(state.filterCat && g.category !== state.filterCat) return false;
+    if(state.filterSub && g.subcategory !== state.filterSub) return false;
+    if(q && !((g.title||"")+" "+(g.description||"")).toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+let previewObserver;
+function renderGrid(){
+  const grid = $("#grid");
+  const list = filtered();
+  if(!list.length){
+    grid.innerHTML = `<div class="empty"><h3>${state.catalog.games.length? "Nothing here yet" : "Your shelf is empty"}</h3>`+
+      `<p>${state.catalog.games.length? "No titles match this filter." : "Unlock admin and add your first HTML game or app to see it appear here, running live."}</p>`+
+      (state.admin? `<button class="btn primary" onclick="window.__openUpload()">+ Add a title</button>`:
+        `<button class="btn ghost" onclick="window.__openLock()">Unlock admin</button>`)+`</div>`;
+    return;
+  }
+  grid.innerHTML = list.map((g,i) => cardHTML(g,i)).join("");
+  // wire cards
+  if(previewObserver) previewObserver.disconnect();
+  previewObserver = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      const fr = e.target.querySelector("iframe");
+      if(!fr) return;
+      if(e.isIntersecting){ if(!fr.src){ fr.src = fr.dataset.src; } }
+      else { if(fr.src){ fr.removeAttribute("src"); } }
+    });
+  }, { rootMargin:"400px 0px" });
+
+  $$(".card", grid).forEach(card => {
+    const id = card.dataset.id;
+    const g = state.catalog.games.find(x => x.id === id);
+    scaleIframe(card);
+    previewObserver.observe(card);
+    const inner = $(".card-inner", card);
+    inner.addEventListener("click", ev => { if(ev.target.closest(".admin-tools")) return; launch(id); });
+    if(!matchMedia("(prefers-reduced-motion:reduce)").matches) attachTilt(card, inner);
+    if(state.admin){
+      $(".edit", card)?.addEventListener("click", e => { e.stopPropagation(); openEdit(id); });
+      $(".del", card)?.addEventListener("click", e => { e.stopPropagation(); confirmDelete(id, g?.title); });
+    }
+  });
+}
+
+function hueOf(g){
+  if(g.accent){ const m = /hsl\(\s*(\d+)/.exec(g.accent); if(m) return +m[1]; }
+  const c = catById(g.category); return c ? c.hue : 210;
+}
+function cardHTML(g, i){
+  const c = catById(g.category);
+  const hue = hueOf(g);
+  const url = api.gameUrl(g.id);
+  const subName = c?.subcategories?.find(s => s.id === g.subcategory)?.name;
+  const delay = Math.min(i*55, 500);
+  return `<article class="card" data-id="${g.id}" style="--h:${hue};animation-delay:${delay}ms">
+    <div class="card-inner">
+      <div class="glow"></div>
+      <div class="preview">
+        <div class="ph"><div><div class="ring"></div><div class="mono">LOADING</div></div></div>
+        <iframe data-src="${esc(url)}" loading="lazy" scrolling="no" tabindex="-1" title="${esc(g.title)} preview"
+          sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"></iframe>
+        <div class="scrim"></div>
+        <div class="badge-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg></div>
+      </div>
+      <div class="admin-tools">
+        <button class="btn edit" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+        <button class="btn del" title="Delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+      </div>
+      <div class="meta">
+        <div class="tags">
+          <span class="tag">${esc(c?.name||"—")}</span>
+          ${subName?`<span class="tag sub">${esc(subName)}</span>`:""}
+        </div>
+        <h3>${esc(g.title)}</h3>
+        ${g.description?`<p class="desc">${esc(g.description)}</p>`:""}
+        <div class="foot"><span>▸ launch</span><span>·</span><span>${fmtSize(g.size)}</span></div>
+      </div>
+    </div>
+  </article>`;
+}
+
+function scaleIframe(card){
+  const pv = $(".preview", card); const fr = $("iframe", card);
+  const set = () => { const w = pv.clientWidth; if(w) fr.style.transform = `scale(${w/1280})`; };
+  set(); requestAnimationFrame(set);
+  if(!card.__ro){ card.__ro = new ResizeObserver(set); card.__ro.observe(pv); }
+}
+
+function attachTilt(card, inner){
+  const glow = $(".glow", card);
+  let raf;
+  card.addEventListener("pointermove", e => {
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left)/r.width, py = (e.clientY - r.top)/r.height;
+    glow.style.setProperty("--mx", px*100+"%"); glow.style.setProperty("--my", py*100+"%");
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => {
+      inner.style.transform = `rotateY(${(px-.5)*8}deg) rotateX(${(.5-py)*8}deg) translateZ(0)`;
+    });
+  });
+  card.addEventListener("pointerleave", () => { cancelAnimationFrame(raf); inner.style.transform = ""; });
+}
+
+function launch(id){
+  const url = api.gameUrl(id);
+  window.open(url, "_blank", "noopener");
+}
+
+/* --------------------------- helpers --------------------------- */
+function fmtSize(bytes){ if(!bytes) return "—"; const kb=bytes/1024; return kb>1024 ? (kb/1024).toFixed(1)+" MB" : Math.round(kb)+" KB"; }
+function timeAgo(t){ const s=(Date.now()-t)/1000; if(s<60)return "just now"; if(s<3600)return Math.floor(s/60)+"m ago"; if(s<86400)return Math.floor(s/3600)+"h ago"; const d=Math.floor(s/86400); return d===1?"yesterday":d+"d ago"; }
+
+/* --------------------------- modals --------------------------- */
+function openModal(el){ $("#scrim").classList.add("open"); el.classList.add("open"); state._openEl = el; }
+function closeModals(){ $("#scrim").classList.remove("open"); $$(".sheet.open,.dialog.open").forEach(e => e.classList.remove("open")); state._openEl = null; }
+$("#scrim").addEventListener("click", closeModals);
+$$("[data-close]").forEach(b => b.addEventListener("click", closeModals));
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeModals(); });
+
+/* --------------------------- admin unlock --------------------------- */
+window.__openLock = () => { if(state.admin){ leaveAdmin(); return; } openModal($("#pwDialog")); setTimeout(()=>$("#pwInput").focus(),120); };
+$("#lockBtn").addEventListener("click", window.__openLock);
+$("#pwSubmit").addEventListener("click", tryUnlock);
+$("#pwInput").addEventListener("keydown", e => { if(e.key==="Enter") tryUnlock(); });
+async function tryUnlock(){
+  const pw = $("#pwInput").value;
+  const ok = await api.verify(pw).catch(()=>false);
+  if(!ok){ toast("That password didn't match.", "err"); $("#pwInput").select(); return; }
+  state.admin = true; state.pw = pw; document.body.classList.add("admin");
+  $("#lockBtn").innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-1.9"/></svg>`;
+  $("#lockBtn").title = "Admin on — click to exit";
+  $("#pwInput").value = ""; closeModals(); render();
+  toast("Admin unlocked. You can add, edit and remove things now.", "ok");
+}
+function leaveAdmin(){ state.admin=false; state.pw=""; document.body.classList.remove("admin");
+  $("#lockBtn").innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
+  render(); toast("Back to visitor view."); }
+
+/* --------------------------- upload / edit --------------------------- */
+function fillCatSelect(){
+  const cs = state.catalog.categories;
+  $("#fCat").innerHTML = cs.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  syncSubSelect();
+}
+function syncSubSelect(){
+  const c = catById($("#fCat").value);
+  const subs = c?.subcategories || [];
+  $("#fSub").innerHTML = `<option value="">— none —</option>` + subs.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("");
+}
+$("#fCat").addEventListener("change", () => { const c = catById($("#fCat").value); if(c && !$("#fHue").dataset.touched){ $("#fHue").value = c.hue; paintHue(); } syncSubSelect(); });
+function paintHue(){ const h=$("#fHue").value; $("#fHueSw").style.background = `hsl(${h} 90% 60%)`; }
+$("#fHue").addEventListener("input", () => { $("#fHue").dataset.touched="1"; paintHue(); });
+
+window.__openUpload = () => openUpload();
+function openUpload(){
+  state.editingId = null; state.pendingHtml = null;
+  $("#upKick").textContent = "NEW TITLE"; $("#upTitle").textContent = "Add a game or app";
+  $("#upSubmit").textContent = "Save title";
+  $("#replaceHint").style.display = "none";
+  $("#fTitle").value=""; $("#fDesc").value=""; $("#dropFile").textContent=""; $("#fileInput").value="";
+  fillCatSelect();
+  const firstCat = state.catalog.categories[0];
+  $("#fHue").value = firstCat? firstCat.hue : 200; delete $("#fHue").dataset.touched; paintHue();
+  openModal($("#upSheet")); setTimeout(()=>$("#fTitle").focus(),150);
+}
+function openEdit(id){
+  const g = state.catalog.games.find(x => x.id===id); if(!g) return;
+  state.editingId = id; state.pendingHtml = null;
+  $("#upKick").textContent = "EDIT TITLE"; $("#upTitle").textContent = "Edit details";
+  $("#upSubmit").textContent = "Save changes";
+  $("#replaceHint").style.display = "block";
+  $("#dropFile").textContent=""; $("#fileInput").value="";
+  fillCatSelect();
+  $("#fTitle").value = g.title||""; $("#fDesc").value = g.description||"";
+  $("#fCat").value = g.category; syncSubSelect(); $("#fSub").value = g.subcategory||"";
+  const c = catById(g.category);
+  if(g.accent){ $("#fHue").dataset.touched="1"; } else delete $("#fHue").dataset.touched;
+  $("#fHue").value = c? c.hue : 200; paintHue();
+  openModal($("#upSheet"));
+}
+
+/* file drop */
+const drop = $("#drop"), fileInput = $("#fileInput");
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("hot"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("hot"));
+drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("hot"); if(e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener("change", () => { if(fileInput.files[0]) readFile(fileInput.files[0]); });
+function readFile(file){
+  if(!/\.html?$/i.test(file.name) && file.type!=="text/html"){ toast("Please choose an .html file.", "err"); return; }
+  const reader = new FileReader();
+  reader.onload = () => { state.pendingHtml = reader.result;
+    $("#dropFile").textContent = "✓ " + file.name + "  (" + fmtSize(file.size) + ")";
+    if(!$("#fTitle").value) $("#fTitle").value = file.name.replace(/\.html?$/i,"").replace(/[-_]+/g," ").trim();
+  };
+  reader.readAsText(file);
+}
+
+$("#upSubmit").addEventListener("click", submitUpload);
+async function submitUpload(){
+  const title = $("#fTitle").value.trim();
+  if(!title){ toast("Give it a title first.", "err"); $("#fTitle").focus(); return; }
+  if(!state.editingId && state.pendingHtml==null){ toast("Drop an HTML file to add.", "err"); return; }
+  if(api.mode==="cloud" && state.pendingHtml && state.pendingHtml.length > 5.5*1024*1024){
+    toast("That file is over ~5.5 MB and may exceed the upload limit.", "err");
+  }
+  const c = catById($("#fCat").value);
+  const accent = $("#fHue").dataset.touched ? `hsl(${$("#fHue").value} 90% 60%)` : "";
+  const payload = { title, category:$("#fCat").value, subcategory:$("#fSub").value,
+    description:$("#fDesc").value.trim(), accent };
+  $("#upBar").classList.add("show"); $("#upSubmit").disabled = true;
+  try{
+    if(state.editingId){
+      if(state.pendingHtml!=null){ await api.upload({ id:state.editingId, html:state.pendingHtml, ...payload }); }
+      else { await api.updateGame({ id:state.editingId, ...payload }); }
+      toast("Saved.", "ok");
+    } else {
+      await api.upload({ html:state.pendingHtml, ...payload });
+      toast(`“${title}” added.`, "ok");
+    }
+    if(api.mode==="cloud") state.catalog = await api.init();
+    closeModals(); render();
+  }catch(err){ toast(err.message || "Something went wrong.", "err"); }
+  finally{ $("#upBar").classList.remove("show"); $("#upSubmit").disabled = false; }
+}
+
+/* --------------------------- delete --------------------------- */
+let pendingDelete = null;
+function confirmDelete(id, title){
+  pendingDelete = id;
+  if(confirm(`Remove “${title||"this title"}”? This can't be undone.`)) doDelete();
+}
+async function doDelete(){
+  try{ await api.deleteGame(pendingDelete);
+    if(api.mode==="cloud") state.catalog = await api.init();
+    else state.catalog = ls.get("sg_catalog", LOCAL_DEFAULT());
+    toast("Removed.", "ok"); render();
+  }catch(err){ toast(err.message||"Couldn't remove it.", "err"); }
+}
+
+/* --------------------------- categories manager --------------------------- */
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || ("c"+Date.now().toString(36));
+function openCats(){
+  state.draft = JSON.parse(JSON.stringify(state.catalog.categories));
+  renderCatEditor(); openModal($("#catSheet"));
+}
+function renderCatEditor(){
+  const body = $("#catBody");
+  body.innerHTML = state.draft.map((c, ci) => `
+    <div class="cat-card" data-ci="${ci}">
+      <div class="cat-top">
+        <div class="hue-swatch" style="background:hsl(${c.hue} 90% 60%)"></div>
+        <input class="c-name" value="${esc(c.name)}" placeholder="Category name" />
+        <button class="mini del c-del" title="Delete category">✕</button>
+      </div>
+      <div class="cat-hue">
+        <span style="font-family:'Space Mono';font-size:.62rem;color:var(--muted-2)">HUE</span>
+        <input type="range" class="c-hue" min="0" max="360" value="${c.hue}" />
+      </div>
+      <div class="subs">
+        ${(c.subcategories||[]).map((s,si)=>`
+          <div class="sub-item" data-si="${si}">
+            <input class="s-name" value="${esc(s.name)}" placeholder="Subcategory" />
+            <button class="mini del s-del" title="Remove">✕</button>
+          </div>`).join("")}
+        <button class="btn ghost sm s-add">+ Subcategory</button>
+      </div>
+    </div>`).join("");
+
+  // wire
+  $$(".cat-card", body).forEach(cc => {
+    const ci = +cc.dataset.ci;
+    $(".c-name", cc).addEventListener("input", e => state.draft[ci].name = e.target.value);
+    $(".c-hue", cc).addEventListener("input", e => { state.draft[ci].hue = +e.target.value; $(".hue-swatch", cc).style.background = `hsl(${e.target.value} 90% 60%)`; });
+    $(".c-del", cc).addEventListener("click", () => { if(confirm(`Delete category “${state.draft[ci].name}”? Titles inside it stay, but lose this label.`)){ state.draft.splice(ci,1); renderCatEditor(); } });
+    $(".s-add", cc).addEventListener("click", () => { (state.draft[ci].subcategories ||= []).push({ id:"", name:"" }); renderCatEditor(); const inputs=$$(".s-name", cc); inputs[inputs.length-1]?.focus(); });
+    $$(".sub-item", cc).forEach(si => {
+      const sidx = +si.dataset.si;
+      $(".s-name", si).addEventListener("input", e => state.draft[ci].subcategories[sidx].name = e.target.value);
+      $(".s-del", si).addEventListener("click", () => { state.draft[ci].subcategories.splice(sidx,1); renderCatEditor(); });
+    });
+  });
+}
+$("#catAdd").addEventListener("click", () => { state.draft.push({ id:"", name:"New category", hue:Math.floor(Math.random()*360), subcategories:[] }); renderCatEditor(); $("#catBody").scrollTop = $("#catBody").scrollHeight; });
+$("#catSave").addEventListener("click", saveCats);
+async function saveCats(){
+  // finalise ids + drop blanks
+  const clean = state.draft
+    .filter(c => (c.name||"").trim())
+    .map(c => ({ id: c.id || slug(c.name), name:c.name.trim(), hue:c.hue,
+      subcategories:(c.subcategories||[]).filter(s=>(s.name||"").trim()).map(s=>({ id:s.id||slug(s.name), name:s.name.trim() })) }));
+  try{ state.catalog.categories = await api.saveCategories(clean);
+    // keep filters valid after structural edits
+    const cat = state.filterCat && catById(state.filterCat);
+    if(state.filterCat && !cat){ state.filterCat=null; state.filterSub=null; }
+    else if(cat && state.filterSub && !cat.subcategories?.some(s=>s.id===state.filterSub)){ state.filterSub=null; }
+    toast("Categories saved.", "ok"); closeModals(); render();
+  }catch(err){ toast(err.message||"Couldn't save.", "err"); }
+}
+
+/* the "+ Add title" button and the "Edit categories" chip only exist in admin */
+let railAdd;
+function updateAdminUI(){
+  if(railAdd) railAdd.style.display = state.admin ? "inline-flex" : "none";
+  $("#editCats")?.addEventListener("click", openCats);
+}
+
+/* --------------------------- chip / search events --------------------------- */
+$("#catChips").addEventListener("click", e => {
+  const b = e.target.closest(".chip[data-cat]"); if(!b) return;
+  state.filterCat = b.dataset.cat || null; state.filterSub = null; render();
+});
+$("#subChips").addEventListener("click", e => {
+  const b = e.target.closest(".chip[data-sub]"); if(!b) return;
+  state.filterSub = b.dataset.sub || null; render();
+});
+let searchT;
+$("#search").addEventListener("input", e => { clearTimeout(searchT); searchT = setTimeout(() => { state.query = e.target.value; renderGrid(); }, 130); });
+
+/* also allow header "add" via keyboard shortcut when admin */
+document.addEventListener("keydown", e => { if(state.admin && (e.key==="u"||e.key==="U") && (e.metaKey||e.ctrlKey)){ e.preventDefault(); openUpload(); } });
+
+/* --------------------------- boot --------------------------- */
+// "+ Add title" button lives in the filter rail, shown only to admins
+railAdd = document.createElement("button");
+railAdd.className = "btn primary sm";
+railAdd.textContent = "+ Add title";
+railAdd.style.cssText = "display:none;order:-1";
+railAdd.addEventListener("click", openUpload);
+$(".rail").insertBefore(railAdd, $(".search"));
+
+(async function boot(){
+  state.catalog = await api.init();
+  if(api.mode === "local"){ $("#modePill").classList.add("show"); $("#modeText").textContent = "local preview"; }
+  render();
+  initThree();
+})();
+
+/* =====================================================================
+ * Ambient 3D background (Three.js). Loaded from CDN; if it fails,
+ * the page still works — the gradient veil carries the mood.
+ * ===================================================================== */
+async function initThree(){
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches) return;
+  let THREE;
+  try{ THREE = await import("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"); }
+  catch{ return; }
+  const canvas = $("#bg");
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .1, 100);
+  cam.position.z = 26;
+
+  // starfield
+  const N = 900, pos = new Float32Array(N*3), col = new Float32Array(N*3);
+  const cyan = new THREE.Color("#38E1FF"), mag = new THREE.Color("#FF4DD8"), vio = new THREE.Color("#8a7bff");
+  for(let i=0;i<N;i++){
+    const r = 18 + Math.random()*40, th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1);
+    pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
+    pos[i*3+1] = r*Math.sin(ph)*Math.sin(th)*.6;
+    pos[i*3+2] = r*Math.cos(ph);
+    const c = [cyan,mag,vio][i%3]; col[i*3]=c.r; col[i*3+1]=c.g; col[i*3+2]=c.b;
+  }
+  const pg = new THREE.BufferGeometry();
+  pg.setAttribute("position", new THREE.BufferAttribute(pos,3));
+  pg.setAttribute("color", new THREE.BufferAttribute(col,3));
+  const stars = new THREE.Points(pg, new THREE.PointsMaterial({ size:.14, vertexColors:true, transparent:true, opacity:.85, blending:THREE.AdditiveBlending, depthWrite:false }));
+  scene.add(stars);
+
+  // floating wire polyhedra
+  const shapes = [];
+  const geos = [new THREE.IcosahedronGeometry(3,0), new THREE.OctahedronGeometry(2.4,0), new THREE.TetrahedronGeometry(2.6,0), new THREE.DodecahedronGeometry(2.6,0)];
+  for(let i=0;i<6;i++){
+    const g = geos[i%geos.length];
+    const m = new THREE.MeshBasicMaterial({ color:[cyan,mag,vio][i%3], wireframe:true, transparent:true, opacity:.34 });
+    const mesh = new THREE.Mesh(g, m);
+    mesh.position.set((Math.random()-.5)*40, (Math.random()-.5)*22, (Math.random()-.5)*20 - 6);
+    mesh.userData = { sx:(Math.random()-.5)*.003, sy:(Math.random()-.5)*.003, fy:Math.random()*Math.PI*2, amp:1+Math.random() };
+    scene.add(mesh); shapes.push(mesh);
+  }
+
+  const mouse = { x:0, y:0 };
+  addEventListener("pointermove", e => { mouse.x = (e.clientX/innerWidth-.5); mouse.y = (e.clientY/innerHeight-.5); }, { passive:true });
+  addEventListener("resize", onResize);
+  function onResize(){ cam.aspect = innerWidth/innerHeight; cam.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); }
+  onResize();
+
+  let running = true;
+  document.addEventListener("visibilitychange", () => { running = !document.hidden; if(running) tick(); });
+  const clock = new THREE.Clock();
+  function tick(){
+    if(!running) return;
+    const t = clock.getElapsedTime();
+    stars.rotation.y = t*.02; stars.rotation.x = Math.sin(t*.05)*.1;
+    shapes.forEach(s => { s.rotation.x += s.userData.sx*4; s.rotation.y += s.userData.sy*4;
+      s.position.y += Math.sin(t*.5 + s.userData.fy)*.004*s.userData.amp; });
+    cam.position.x += (mouse.x*6 - cam.position.x)*.03;
+    cam.position.y += (-mouse.y*4 - cam.position.y)*.03;
+    cam.lookAt(0,0,0);
+    renderer.render(scene, cam);
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+</script>
+</body>
+</html>
