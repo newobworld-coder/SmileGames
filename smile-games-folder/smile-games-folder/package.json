@@ -1,0 +1,10 @@
+{
+  "name": "smile-games",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A 3D shelf for self-contained HTML games and apps, generated from a folder.",
+  "scripts": {
+    "build": "node build-catalog.mjs"
+  }
+}
